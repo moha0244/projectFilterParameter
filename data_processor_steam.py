@@ -147,12 +147,13 @@ def data_viewer_page():
 
         st.session_state.current_df = df
 
-        if len(st.session_state.filter_columns) > 0 and st.button("Reset Filters")  :
+        if(len(st.session_state.filter_columns) == 0):
+            st.warning("Aucun filtre n'a été sélectionné.")
+
+        elif st.button("Reset Filters") :
             st.session_state.current_df = st.session_state.original_df.copy()
             st.session_state.filter_reset_counter =True
             st.rerun()
-        else:
-            st.warning("Aucun filtre n'a été sélectionné.")
 
 
         if st.button("Back to Upload"):
