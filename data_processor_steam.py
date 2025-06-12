@@ -2,19 +2,18 @@ import streamlit as st
 import pandas as pd
 from io import StringIO
 
-
 def choice_column_filtered_parameter(df):
-    with st.expander(" Sélection les paramètres que vous voulez afficher", expanded=True):
-        st.markdown("### Sélection des colonnes à afficher")
+    with st.expander("Étape 1 : Sélectionner les colonnes à afficher", expanded=True):
+        st.markdown("Choisissez les colonnes que vous souhaitez visualiser dans le tableau de données.")
 
         available_columns = df.columns.tolist()
-        mode = st.selectbox("Mode de sélection :", ["Tout", "Personnalisé"], key="select_mode_param")
+        mode = st.selectbox("Mode de sélection des colonnes", ["Tout afficher", "Sélection personnalisée"], key="select_mode_param")
 
-        if mode == "Tout":
+        if mode == "Tout afficher":
             selected_columns = available_columns
         else:
             selected_columns = st.multiselect(
-                "Colonnes à inclure dans l’analyse",
+                "Colonnes à inclure",
                 options=available_columns,
                 default=[],
                 key="filter_columns_parameter"
@@ -26,28 +25,22 @@ def choice_column_filtered_parameter(df):
 
         return df[selected_columns]
 
-
-
 def choice_column_filtered_Search(selected_columns):
-    with st.expander(" Sélection des colonnes à filtrer (facultatif)", expanded=True):
-        st.markdown("Choisissez les colonnes pour les filtres dynamiques dans la page suivante :")
+    with st.expander("Étape 2 : Sélectionner les colonnes à filtrer (facultatif)", expanded=True):
+        st.markdown("Sélectionnez les colonnes sur lesquelles vous souhaitez appliquer des filtres dans la page suivante.")
 
         if not selected_columns:
-            st.info("Aucune colonne sélectionnée précédemment.")
+            st.info("Aucune colonne n'a été sélectionnée à l'étape précédente.")
             return
 
         cols = st.columns(1)
-
         filter_columns = cols[0].multiselect(
-            "choix de filtre de recherche",
+            "Colonnes pour les filtres",
             options=selected_columns,
             default=[],
             key="filter"
         )
-
         st.session_state.filter_columns = filter_columns
-
-
 
 def read_csv_file(uploaded_file):
     if uploaded_file is None:
@@ -64,16 +57,11 @@ def read_csv_file(uploaded_file):
                 continue
     return None
 
-
 def load_and_prepare_data(uploaded_file):
     df = read_csv_file(uploaded_file)
     if df is None:
         return df
-
-
-
     return choice_column_filtered_parameter(df)
-
 
 def get_unique_column_values(df, column_name):
     try:
@@ -84,43 +72,39 @@ def get_unique_column_values(df, column_name):
     except Exception:
         return []
 
-
 def main_page():
-    st.title("Data Processor - Upload")
-    uploaded_file = st.file_uploader("Upload CSV file", type=['csv'])
+    st.title("Analyseur de données - Téléversement")
+    uploaded_file = st.file_uploader("Téléversez un fichier CSV contenant la table", type=['csv'])
 
     if uploaded_file is not None:
-        st.success("File loaded successfully! Click the button below to view the data.")
+        st.success("Fichier chargé avec succès. Passez à l'étape suivante pour sélectionner les données à afficher.")
         filtered_df = load_and_prepare_data(uploaded_file)
         if filtered_df is not None:
             choice_column_filtered_Search(filtered_df.columns.tolist())
             st.session_state.original_df = filtered_df
             st.session_state.current_df = filtered_df.copy()
             st.session_state.file_uploaded = True
-            if st.button("View Data"):
+            if st.button("Afficher les données"):
                 st.session_state.page = "data_viewer"
                 st.rerun()
         else:
-            st.error("Could not process the file. Please check the format.")
-
+            st.error("Impossible de traiter le fichier. Vérifiez son format.")
 
 def data_viewer_page():
-    st.title("Data Processor - Viewer")
+    st.title("Analyseur de données - Visualisation")
 
     if 'original_df' not in st.session_state:
-        st.warning("No data available. Please upload a file first.")
-        if st.button("Back to Upload"):
+        st.warning("Aucun fichier chargé. Veuillez d'abord téléverser un fichier.")
+        if st.button("Retour à l'étape précédente"):
             st.session_state.page = "main"
             st.rerun()
         return
 
-    # Initialisation du compteur de reset
     if 'filter_reset_counter' not in st.session_state:
         st.session_state.filter_reset_counter = False
 
-
     with st.sidebar:
-        st.header("Filtrer selon les colonnes que vous avez choisi ")
+        st.header("Filtres dynamiques")
 
         filter_columns = st.session_state.get("filter_columns", [])
         df = st.session_state.original_df.copy()
@@ -130,50 +114,43 @@ def data_viewer_page():
                 continue
 
             unique_values = get_unique_column_values(st.session_state.original_df, col)
-
-
             selectbox_key = f"filter_{col}_{st.session_state.filter_reset_counter}"
 
             if df[col].dtype == object:
-                val = st.selectbox(f"{col} :", [''] + unique_values,
-                                   key=selectbox_key)
+                val = st.selectbox(f"{col}", [''] + unique_values, key=selectbox_key)
                 if val:
                     df = df[df[col] == val]
             else:
                 unique_vals = sorted(df[col].dropna().unique())
                 int_options = [int(v) for v in unique_vals]
-                val = st.selectbox(f"{col} :", [''] + [str(i) for i in int_options],
-                                   key=selectbox_key)
+                val = st.selectbox(f"{col}", [''] + [str(i) for i in int_options], key=selectbox_key)
                 if val:
                     df = df[df[col] == int(val)]
 
         st.session_state.current_df = df
 
         if len(st.session_state.filter_columns) == 0:
-            st.warning("Aucun filtre n'a été sélectionné.")
+            st.info("Aucun filtre sélectionné.")
 
-        elif st.button("Reset Filters") :
+        elif st.button("Réinitialiser les filtres"):
             st.session_state.current_df = st.session_state.original_df.copy()
-            st.session_state.filter_reset_counter =True
+            st.session_state.filter_reset_counter = True
             st.rerun()
 
-
-        if st.button("Back to Upload"):
+        if st.button("Retour au téléversement"):
             st.session_state.page = "main"
             st.rerun()
 
-    # Main content area
+    st.subheader("Données filtrées")
     st.dataframe(st.session_state.current_df)
 
-    # Download button
     csv = st.session_state.current_df.to_csv(index=False).encode('utf-8')
     st.download_button(
-        label="Download data as CSV",
+        label="Télécharger les données filtrées au format CSV",
         data=csv,
-        file_name='filtered_data.csv',
+        file_name='donnees_filtrees.csv',
         mime='text/csv',
     )
-
 
 def main():
     if 'page' not in st.session_state:
@@ -183,7 +160,6 @@ def main():
         main_page()
     elif st.session_state.page == "data_viewer":
         data_viewer_page()
-
 
 if __name__ == "__main__":
     main()
