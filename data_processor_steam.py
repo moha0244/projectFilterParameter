@@ -4,26 +4,29 @@ from io import StringIO
 
 
 def choice_column_filtered_parameter(df):
-    st.markdown("### Sélection des colonnes à afficher")
+    with st.expander(" Sélection les paramètres que vous voulez afficher", expanded=True):
+        st.markdown("### Sélection des colonnes à afficher")
 
-    available_columns = df.columns.tolist()
-    mode = st.selectbox("Mode de sélection :", ["Tout", "Personnalisé"], key="select_mode_param")
+        available_columns = df.columns.tolist()
+        mode = st.selectbox("Mode de sélection :", ["Tout", "Personnalisé"], key="select_mode_param")
 
-    if mode == "Tout":
-        selected_columns = available_columns
-    else:
-        selected_columns = st.multiselect(
-            "Colonnes à inclure dans l’analyse",
-            options=available_columns,
-            default=available_columns,
-            key="filter_columns_parameter"
-        )
+        if mode == "Tout":
+            selected_columns = available_columns
+        else:
+            selected_columns = st.multiselect(
+                "Colonnes à inclure dans l’analyse",
+                options=available_columns,
+                default=[],
+                key="filter_columns_parameter"
+            )
 
-    if not selected_columns:
-        st.warning("Veuillez sélectionner au moins une colonne.")
-        return None
+        if not selected_columns:
+            st.warning("Veuillez sélectionner au moins une colonne.")
+            return None
 
-    return df[selected_columns]
+        return df[selected_columns]
+
+
 
 def choice_column_filtered_Search(selected_columns):
     with st.expander(" Sélection des colonnes à filtrer (facultatif)", expanded=True):
@@ -87,14 +90,13 @@ def main_page():
     uploaded_file = st.file_uploader("Upload CSV file", type=['csv'])
 
     if uploaded_file is not None:
+        st.success("File loaded successfully! Click the button below to view the data.")
         filtered_df = load_and_prepare_data(uploaded_file)
         if filtered_df is not None:
             choice_column_filtered_Search(filtered_df.columns.tolist())
-        if filtered_df is not None:
             st.session_state.original_df = filtered_df
             st.session_state.current_df = filtered_df.copy()
             st.session_state.file_uploaded = True
-            st.success("File loaded successfully! Click the button below to view the data.")
             if st.button("View Data"):
                 st.session_state.page = "data_viewer"
                 st.rerun()
@@ -147,7 +149,7 @@ def data_viewer_page():
 
         st.session_state.current_df = df
 
-        if(len(st.session_state.filter_columns) == 0):
+        if len(st.session_state.filter_columns) == 0:
             st.warning("Aucun filtre n'a été sélectionné.")
 
         elif st.button("Reset Filters") :
