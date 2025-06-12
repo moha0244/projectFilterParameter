@@ -25,7 +25,7 @@ def choice_column_filtered_parameter(df):
 
         return df[selected_columns]
 
-def choice_column_filtered_Search(selected_columns):
+def choice_column_filtered_search(selected_columns):
     with st.expander("Étape 2 : Sélectionner les colonnes à filtrer (facultatif)", expanded=True):
         st.markdown("Sélectionnez les colonnes sur lesquelles vous souhaitez appliquer des filtres dans la page suivante.")
 
@@ -80,10 +80,9 @@ def main_page():
         st.success("Fichier chargé avec succès. Passez à l'étape suivante pour sélectionner les données à afficher.")
         filtered_df = load_and_prepare_data(uploaded_file)
         if filtered_df is not None:
-            choice_column_filtered_Search(filtered_df.columns.tolist())
+            choice_column_filtered_search(filtered_df.columns.tolist())
             st.session_state.original_df = filtered_df
             st.session_state.current_df = filtered_df.copy()
-            st.session_state.file_uploaded = True
             if st.button("Afficher les données"):
                 st.session_state.page = "data_viewer"
                 st.rerun()
