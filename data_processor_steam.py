@@ -88,7 +88,7 @@ def main_page():
                 st.session_state.page = "data_viewer"
                 st.rerun()
         else:
-            st.error("Impossible de traiter le fichier. Vérifiez son format.")
+            st.error("Impossible de traiter le fichier par manque d'informations.")
 
 def data_viewer_page():
     st.title("Analyseur de données - Visualisation")
